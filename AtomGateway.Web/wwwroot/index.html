@@ -24,15 +24,21 @@
         .stat-box { flex: 1; padding: 15px; background: #e9ecef; border-radius: 5px; text-align: center; }
         .stat-box h4 { margin: 0 0 5px 0; color: #6c757d; font-size: 12px; }
         .stat-box .value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .alert { padding: 12px; margin: 10px 0; border-radius: 5px; display: none; }
+        .alert.show { display: block; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 Atom Gateway Dashboard</h1>
+        <h1>Atom Gateway Dashboard</h1>
         
         <div id="status" class="status disconnected">
-            🔴 Desconectado do servidor
+             Desconectado do servidor
         </div>
+
+        <div id="alert" class="alert"></div>
 
         <div class="stats">
             <div class="stat-box">
@@ -40,97 +46,129 @@
                 <div class="value" id="msgCount">0</div>
             </div>
             <div class="stat-box">
+                <h4>MENSAGENS ENVIADAS</h4>
+                <div class="value" id="sentCount">0</div>
+            </div>
+            <div class="stat-box">
                 <h4>IDENTIDADES</h4>
                 <div class="value" id="idCount">0</div>
             </div>
             <div class="stat-box">
                 <h4>CONEXÃO SERIAL</h4>
-                <div class="value" id="serialStatus">❌</div>
+                <div class="value" id="serialStatus"></div>
             </div>
         </div>
 
-        <h2>📤 Enviar para Atom</h2>
+        <h2>Enviar para Atom</h2>
         <div class="input-group">
             <input type="text" id="messageInput" placeholder="Digite mensagem para o Atom..." disabled>
             <button id="sendBtn" onclick="sendToAtom()" disabled>Enviar</button>
         </div>
 
-        <h2>📋 Log de Eventos</h2>
+        <h2>Log de Eventos</h2>
         <div id="log" class="log"></div>
 
-        <h2>🆔 Identidades Recebidas (DTC)</h2>
+        <h2>Identidades Recebidas (DTC)</h2>
         <div id="identities"></div>
     </div>
 
     <script>
         let messageCount = 0;
+        let sentCount = 0;
         let identityCount = 0;
 
-        // IMPORTANTE: Aponta para a API na porta 5000
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("http://localhost:5000/atomhub")  // ← URL da API
+            .withUrl("http://localhost:5000/atomhub")
             .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Information)
             .build();
 
+        // Quando receber dados DO Atom
         connection.on("DataReceived", (message) => {
             messageCount++;
             updateStats();
-            addLog(`📥 <strong>RECEBIDO:</strong> ${message.type} - ${message.rawData}`, '#d4edda');
+            addLog(`<strong>ATOM → SERVIDOR:</strong> ${message.type} - ${message.rawData}`, '#d4edda');
+        });
+
+        // Quando uma mensagem for enviada com sucesso PARA o Atom
+        connection.on("MessageSent", (data) => {
+            sentCount++;
+            updateStats();
+            addLog(`<strong>SERVIDOR → ATOM:</strong> ${data.message}`, '#cfe2ff');
+            showAlert('Mensagem enviada para o Atom!', 'success');
         });
 
         connection.on("IdentityReceived", (dtcData) => {
             identityCount++;
             updateStats();
-            addLog(`✅ <strong>IDENTIDADE COMPLETA:</strong> ${dtcData.passengerName || 'N/A'}`, '#d1ecf1');
+            addLog(`<strong>IDENTIDADE COMPLETA:</strong> ${dtcData.passengerName || 'N/A'}`, '#d1ecf1');
             displayIdentity(dtcData);
         });
 
         connection.on("SerialStatus", (isConnected) => {
-            document.getElementById('serialStatus').textContent = isConnected ? '✅' : '❌';
+            document.getElementById('serialStatus').textContent = isConnected ? 'V' : 'X';
             addLog(`🔌 <strong>Status Serial:</strong> ${isConnected ? 'CONECTADO' : 'DESCONECTADO'}`, isConnected ? '#d4edda' : '#f8d7da');
+        });
+
+        connection.on("Error", (errorMessage) => {
+            addLog(`<strong>ERRO:</strong> ${errorMessage}`, '#f8d7da');
+            showAlert('X' + errorMessage, 'error');
         });
 
         connection.onreconnecting(() => {
             updateStatus(false);
-            addLog('🔄 <strong>Reconectando...</strong>', '#fff3cd');
+            addLog('<strong>Reconectando...</strong>', '#fff3cd');
         });
 
         connection.onreconnected(() => {
             updateStatus(true);
-            addLog('✅ <strong>Reconectado!</strong>', '#d4edda');
+            addLog('<strong>Reconectado!</strong>', '#d4edda');
         });
 
         connection.onclose(() => {
             updateStatus(false);
-            addLog('❌ <strong>Conexão perdida</strong>', '#f8d7da');
+            addLog('<strong>Conexão perdida</strong>', '#f8d7da');
         });
 
-        // Conectar ao servidor
         connection.start()
             .then(() => {
-                addLog("✅ <strong>Conectado ao servidor SignalR</strong>", '#d4edda');
+                addLog("<strong>Conectado ao servidor SignalR</strong>", '#d4edda');
                 updateStatus(true);
             })
             .catch(err => {
-                addLog(`❌ <strong>Erro ao conectar:</strong> ${err}`, '#f8d7da');
+                addLog(`<strong>Erro ao conectar:</strong> ${err}`, '#f8d7da');
                 updateStatus(false);
                 console.error(err);
             });
 
         function sendToAtom() {
-            const message = document.getElementById('messageInput').value;
-            if (!message) return;
+            const message = document.getElementById('messageInput').value.trim();
+            if (!message) {
+                showAlert('Digite uma mensagem primeiro!', 'error');
+                return;
+            }
+
+            addLog(`<strong>ENVIANDO:</strong> ${message}...`, '#fff3cd');
 
             connection.invoke("SendToAtom", message)
                 .then(() => {
-                    addLog(`📤 <strong>ENVIADO:</strong> ${message}`, '#cfe2ff');
                     document.getElementById('messageInput').value = '';
+                    console.log('Message sent successfully');
                 })
                 .catch(err => {
-                    addLog(`❌ <strong>Erro ao enviar:</strong> ${err}`, '#f8d7da');
+                    addLog(`<strong>Erro ao enviar:</strong> ${err}`, '#f8d7da');
+                    showAlert('Erro ao enviar mensagem', 'error');
                     console.error(err);
                 });
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
         }
 
         function addLog(message, bgColor = '#f8f9fa') {
@@ -142,7 +180,6 @@
             entry.innerHTML = `<strong>[${time}]</strong> ${message}`;
             log.insertBefore(entry, log.firstChild);
             
-            // Limitar a 100 entradas
             if (log.children.length > 100) {
                 log.removeChild(log.lastChild);
             }
@@ -154,7 +191,7 @@
             const btn = document.getElementById('sendBtn');
             
             status.className = isConnected ? 'status connected' : 'status disconnected';
-            status.textContent = isConnected ? '🟢 Conectado ao servidor' : '🔴 Desconectado do servidor';
+            status.textContent = isConnected ? 'Conectado ao servidor' : 'Desconectado do servidor';
             
             input.disabled = !isConnected;
             btn.disabled = !isConnected;
@@ -162,6 +199,7 @@
 
         function updateStats() {
             document.getElementById('msgCount').textContent = messageCount;
+            document.getElementById('sentCount').textContent = sentCount;
             document.getElementById('idCount').textContent = identityCount;
         }
 
@@ -172,16 +210,15 @@
             card.innerHTML = `
                 <h3>👤 ${dtc.passengerName || 'N/A'}</h3>
                 ${dtc.photoBase64 ? `<img src="data:image/jpeg;base64,${dtc.photoBase64}" alt="Foto">` : '<p><em>Sem foto</em></p>'}
-                <p><strong>🛂 Passaporte:</strong> ${dtc.passportNumber || 'N/A'}</p>
-                <p><strong>🌍 Nacionalidade:</strong> ${dtc.nationality || 'N/A'}</p>
-                <p><strong>🎂 Data Nascimento:</strong> ${dtc.dateOfBirth ? new Date(dtc.dateOfBirth).toLocaleDateString('pt-PT') : 'N/A'}</p>
-                <p><strong>⏰ Recebido:</strong> ${new Date(dtc.receivedAt).toLocaleString('pt-PT')}</p>
-                ${dtc.isComplete ? '<p style="color: green;">✅ Dados completos</p>' : '<p style="color: orange;">⚠️ Dados incompletos</p>'}
+                <p><strong>Passaporte:</strong> ${dtc.passportNumber || 'N/A'}</p>
+                <p><strong>Nacionalidade:</strong> ${dtc.nationality || 'N/A'}</p>
+                <p><strong>Data Nascimento:</strong> ${dtc.dateOfBirth ? new Date(dtc.dateOfBirth).toLocaleDateString('pt-PT') : 'N/A'}</p>
+                <p><strong>Recebido:</strong> ${new Date(dtc.receivedAt).toLocaleString('pt-PT')}</p>
+                ${dtc.isComplete ? '<p style="color: green;">Dados completos</p>' : '<p style="color: orange;">⚠️ Dados incompletos</p>'}
             `;
             container.insertBefore(card, container.firstChild);
         }
 
-        // Enter para enviar
         document.getElementById('messageInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendToAtom();
         });
