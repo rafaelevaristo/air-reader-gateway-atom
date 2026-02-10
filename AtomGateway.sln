@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomGateway.Api", "AtomGateway.Api\AtomGateway.Api.csproj", "{EE96D86D-1578-488C-AE3F-C2E23EE81BD4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomGateway.Core", "AtomGateway.Core\AtomGateway.Core.csproj", "{C6C4BE20-541C-472B-BAE1-A868BEFCABB0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomGateway.Web", "AtomGateway.Web\AtomGateway.Web.csproj", "{14EF2F02-BA9C-472F-A9CF-9C91C3AC934C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE96D86D-1578-488C-AE3F-C2E23EE81BD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE96D86D-1578-488C-AE3F-C2E23EE81BD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE96D86D-1578-488C-AE3F-C2E23EE81BD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE96D86D-1578-488C-AE3F-C2E23EE81BD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6C4BE20-541C-472B-BAE1-A868BEFCABB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6C4BE20-541C-472B-BAE1-A868BEFCABB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6C4BE20-541C-472B-BAE1-A868BEFCABB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6C4BE20-541C-472B-BAE1-A868BEFCABB0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14EF2F02-BA9C-472F-A9CF-9C91C3AC934C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14EF2F02-BA9C-472F-A9CF-9C91C3AC934C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14EF2F02-BA9C-472F-A9CF-9C91C3AC934C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14EF2F02-BA9C-472F-A9CF-9C91C3AC934C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

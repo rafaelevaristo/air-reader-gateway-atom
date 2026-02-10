@@ -1,0 +1,30 @@
+# Ignore C# build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# Visual Studio
+.vs/
+.vscode/
+*.csproj.user
+*.sln.DotSettings.user
+
+# ReSharper
+.idea/
+*.suo
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Test Results
+TestResults/
+*.trx
+
+# User-specific files
+appsettings.local.json
