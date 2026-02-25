@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtomS3 Power Controller</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #333; margin-top: 0; }
+        .status { padding: 10px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        .disconnected { background: #ffe3e3; color: #d9534f; }
+        .connected { background: #e3ffe6; color: #5cb85c; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-connect { background: #007bff; color: white; }
+        .btn-connect:hover { background: #0056b3; }
+        .control-group { margin-top: 25px; }
+        label { display: block; margin-bottom: 10px; color: #666; font-size: 14px; }
+        input[type=range] { width: 100%; margin: 15px 0; }
+        .power-val { font-size: 24px; font-weight: bold; color: #007bff; text-align: center; display: block; }
+        .log { margin-top: 20px; height: 100px; overflow-y: auto; background: #222; color: #0f0; padding: 10px; font-family: monospace; font-size: 12px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>BLE TX Power Control</h2>
+    <div id="statusBox" class="status disconnected">Disconnected</div>
+    
+    <button id="connectBtn" class="btn-connect">Connect to AtomS3</button>
+
+    <div class="control-group">
+        <label>TX Power Level (0 = -12dBm | 4 = 0dBm | 7 = +9dBm)</label>
+        <span id="powerDisplay" class="power-val">4</span>
+        <input type="range" id="powerSlider" min="0" max="7" value="4" disabled>
+        <button id="sendBtn" style="background: #28a745; color: white;" disabled>Set Power Level</button>
+    </div>
+
+    <div class="log" id="serialLog">Console: Awaiting connection...</div>
+</div>
+
+<script>
+    let port;
+    let writer;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const powerSlider = document.getElementById('powerSlider');
+    const powerDisplay = document.getElementById('powerDisplay');
+    const statusBox = document.getElementById('statusBox');
+    const log = document.getElementById('serialLog');
+
+    powerSlider.oninput = () => powerDisplay.innerText = powerSlider.value;
+
+    async function connect() {
+        try {
+            // Request port from user
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+
+            writer = port.writable.getWriter();
+            
+            statusBox.innerText = "Connected";
+            statusBox.className = "status connected";
+            connectBtn.innerText = "Disconnect";
+            powerSlider.disabled = false;
+            sendBtn.disabled = false;
+            
+            addToLog("Connected to AtomS3!");
+        } catch (err) {
+            addToLog("Error: " + err);
+        }
+    }
+
+    async function sendPower() {
+        const command = `POWER=${powerSlider.value}\n`;
+        const encoder = new TextEncoder();
+        await writer.write(encoder.encode(command));
+        addToLog("Sent: " + command.trim());
+    }
+
+    function addToLog(msg) {
+        log.innerHTML += `<div>> ${msg}</div>`;
+        log.scrollTop = log.scrollHeight;
+    }
+
+    connectBtn.onclick = () => {
+        if (!port) connect();
+        else window.location.reload(); // Simple way to reset connection
+    };
+
+    sendBtn.onclick = sendPower;
+</script>
+
+</body>
+</html>
